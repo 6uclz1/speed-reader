@@ -38,6 +38,10 @@ const Slider = styled.input.attrs({
   margin: 1rem 0;
 `;
 
+const SliderText = styled.label`
+  font-size: 0.9rem;
+`;
+
 const ControlsContainer = styled.div`
   display: flex;
   justify-content: center;
@@ -149,7 +153,7 @@ const SpeedReader = () => {
       />
       <ControlsContainer>
         <Slider onChange={handleSpeedChange} value={speed} />
-        <div>速度: {speed}ms</div>
+        <SliderText>速度: {speed}ms</SliderText>
         <button onClick={startReading}>▶再生</button>
         <button onClick={() => setIsPaused(!isPaused)}>
           {isPaused ? "再開" : "一時停止"}
