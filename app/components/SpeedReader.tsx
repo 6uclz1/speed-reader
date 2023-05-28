@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, SetStateAction } from "react";
 import styled from "styled-components";
-import kuromoji from "kuromoji";
+import kuromoji, { IpadicFeatures, Tokenizer } from "kuromoji";
 
 const Container = styled.div`
   display: flex;
@@ -44,7 +44,9 @@ const SpeedReader = () => {
   const [words, setWords] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [context, setContext] = useState({ prev: "", current: "", next: "" });
-  const [tokenizer, setTokenizer] = useState(null);
+  const [tokenizer, setTokenizer] = useState<Tokenizer<IpadicFeatures> | null>(
+    null
+  );
   const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
@@ -55,11 +57,15 @@ const SpeedReader = () => {
   }, []);
 
   const startReading = () => {
-    const path = tokenizer.tokenize(text);
-    const tokens = path.map((token) => token.surface_form);
-    setWords(tokens);
-    setCurrentIndex(0);
-    setIsPaused(false);
+    if (tokenizer) {
+      const path = tokenizer.tokenize(text);
+      const tokens = path.map(
+        (token: { surface_form: any }) => token.surface_form
+      );
+      setWords(tokens);
+      setCurrentIndex(0);
+      setIsPaused(false);
+    }
   };
 
   useEffect(() => {
@@ -77,11 +83,13 @@ const SpeedReader = () => {
     }
   }, [words, currentIndex]);
 
-  const handleChange = (event) => {
+  const handleChange = (event: {
+    target: { value: SetStateAction<string> };
+  }) => {
     setText(event.target.value);
   };
 
-  const handleSpeedChange = (event) => {
+  const handleSpeedChange = (event: { target: { value: any } }) => {
     setSpeed(Number(event.target.value));
   };
 
