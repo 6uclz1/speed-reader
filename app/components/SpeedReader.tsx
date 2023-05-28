@@ -1,4 +1,4 @@
-import { useState, useEffect, SetStateAction } from "react";
+import { useState, useEffect, SetStateAction, useRef } from "react";
 import styled from "styled-components";
 import kuromoji, { IpadicFeatures, Tokenizer } from "kuromoji";
 
@@ -7,7 +7,7 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1rem;
 `;
 
 const Textarea = styled.textarea`
@@ -38,6 +38,14 @@ const Slider = styled.input.attrs({
   margin: 1rem 0;
 `;
 
+const ControlsContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  align-items: center;
+`;
+
 const SpeedReader = () => {
   const [text, setText] = useState("");
   const [speed, setSpeed] = useState(300);
@@ -48,6 +56,7 @@ const SpeedReader = () => {
     null
   );
   const [isPaused, setIsPaused] = useState(false);
+  const timeoutId = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     kuromoji.builder({ dicPath: "dict/" }).build((err, tokenizer) => {
@@ -67,6 +76,29 @@ const SpeedReader = () => {
       setIsPaused(false);
     }
   };
+
+  const step = () => {
+    if (currentIndex < words.length) {
+      setCurrentIndex((currentIndex) => currentIndex + 1);
+      if (!isPaused) {
+        timeoutId.current = setTimeout(step, speed);
+      }
+    } else {
+      setIsPaused(true);
+    }
+  };
+
+  useEffect(() => {
+    if (words.length > 0 && !isPaused) {
+      timeoutId.current = setTimeout(step, speed);
+    }
+
+    return () => {
+      if (timeoutId.current) {
+        clearTimeout(timeoutId.current);
+      }
+    };
+  }, [words, currentIndex, speed, isPaused]);
 
   useEffect(() => {
     if (words.length > 0) {
@@ -93,11 +125,19 @@ const SpeedReader = () => {
     setSpeed(Number(event.target.value));
   };
 
-  if (words.length > 0 && !isPaused) {
-    setTimeout(() => {
-      setCurrentIndex((currentIndex) => currentIndex + 1);
-    }, speed);
-  }
+  const handlePauseResume = () => {
+    if (isPaused) {
+      setIsPaused(false);
+      if (currentIndex < words.length) {
+        timeoutId.current = setTimeout(step, speed);
+      }
+    } else {
+      setIsPaused(true);
+      if (timeoutId.current) {
+        clearTimeout(timeoutId.current);
+      }
+    }
+  };
 
   return (
     <Container>
@@ -106,12 +146,14 @@ const SpeedReader = () => {
         value={text}
         placeholder="速読したいテキストを入力してください..."
       />
-      <Slider onChange={handleSpeedChange} value={speed} />
-      <div>速度: {speed}ミリ秒</div>
-      <button onClick={startReading}>読み始める</button>
-      <button onClick={() => setIsPaused(!isPaused)}>
-        {isPaused ? "再開" : "一時停止"}
-      </button>
+      <ControlsContainer>
+        <Slider onChange={handleSpeedChange} value={speed} />
+        <div>速度: {speed}ミリ秒</div>
+        <button onClick={startReading}>読み始める</button>
+        <button onClick={() => setIsPaused(!isPaused)}>
+          {isPaused ? "再開" : "一時停止"}
+        </button>
+      </ControlsContainer>
       <HighlightedText>
         <Faint>{context.prev}</Faint> {context.current}{" "}
         <Faint>{context.next}</Faint>
